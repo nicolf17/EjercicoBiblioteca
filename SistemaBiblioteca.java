@@ -1,7 +1,5 @@
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 public class SistemaBiblioteca {
 
@@ -36,8 +34,8 @@ public class SistemaBiblioteca {
         }
 
         public void mostrarDatos() {
-            System.out.println("Código: " + codigo + " | Título: " + titulo + 
-                                " | Autor: " + autor + " | Disponible: " + (disponible ? "Sí" : "No"));
+            System.out.println("Código: " + codigo + " | Título: " + titulo +
+                               " | Autor: " + autor + " | Disponible: " + (disponible ? "Sí" : "No"));
         }
     }
 
@@ -57,13 +55,9 @@ public class SistemaBiblioteca {
             return idUsuario;
         }
 
-        public ArrayList<Libro> getLibrosPrestados() {
-            return librosPrestados;
-        }
-
         public void mostrarDatos() {
-            System.out.println("Usuario: " + nombre + " | ID: " + idUsuario + 
-                                " | Libros Prestados: " + librosPrestados.size());
+            System.out.println("Usuario: " + nombre + " | ID: " + idUsuario +
+                               " | Libros Prestados: " + librosPrestados.size());
         }
 
         public boolean agregarPrestamo(Libro libro) {
@@ -81,31 +75,14 @@ public class SistemaBiblioteca {
         }
     }
 
-    // ====== CLASE PRÉSTAMO ======
-    static class Prestamo {
-        Usuario usuario;
-        Libro libro;
-        LocalDate fechaInicio;
-        LocalDate fechaLimite;
-
-        Prestamo(Usuario usuario, Libro libro, LocalDate fechaInicio, LocalDate fechaLimite) {
-            this.usuario = usuario;
-            this.libro = libro;
-            this.fechaInicio = fechaInicio;
-            this.fechaLimite = fechaLimite;
-        }
-    }
-
     // ====== CLASE BIBLIOTECA ======
     static class Biblioteca {
         private ArrayList<Libro> libros;
         private ArrayList<Usuario> usuarios;
-        private ArrayList<Prestamo> historial;
 
         public Biblioteca() {
             libros = new ArrayList<>();
             usuarios = new ArrayList<>();
-            historial = new ArrayList<>();
         }
 
         // Registrar libro
@@ -142,48 +119,30 @@ public class SistemaBiblioteca {
             if (usuario != null && libro != null && libro.isDisponible()) {
                 if (usuario.agregarPrestamo(libro)) {
                     libro.marcarPrestado();
-                    LocalDate hoy = LocalDate.now();
-                    LocalDate limite = hoy.plusDays(7); // plazo de 7 días
-                    historial.add(new Prestamo(usuario, libro, hoy, limite));
-                    System.out.println("Préstamo realizado. Fecha límite: " + limite);
+                    System.out.println("Préstamo realizado con éxito.");
                 }
             } else {
                 System.out.println("No se puede realizar el préstamo.");
             }
         }
 
-        // Devolver libro
-        public void devolverLibro(String idUsuario, String codigoLibro) {
+        // Devolver libro (con multa simplificada)
+        public void devolverLibro(String idUsuario, String codigoLibro, int diasRetraso) {
             Usuario usuario = buscarUsuario(idUsuario);
             Libro libro = buscarLibro(codigoLibro);
 
             if (usuario != null && libro != null && usuario.devolverLibro(libro)) {
                 libro.marcarDisponible();
 
-                Prestamo prestamo = buscarPrestamo(usuario, libro);
-                if (prestamo != null) {
-                    LocalDate hoy = LocalDate.now();
-                    long diasRetraso = ChronoUnit.DAYS.between(prestamo.fechaLimite, hoy);
-
-                    if (diasRetraso > 0) {
-                        long multa = diasRetraso * 500;
-                        System.out.println("Libro devuelto con retraso de " + diasRetraso + 
-                                            " días. Multa: $" + multa);
-                    } else {
-                        System.out.println("Libro devuelto a tiempo. No hay multa.");
-                    }
-                    historial.remove(prestamo);
+                if (diasRetraso > 0) {
+                    int multa = diasRetraso * 500;
+                    System.out.println("Libro devuelto con retraso de " + diasRetraso +
+                                       " días. Multa: $" + multa);
+                } else {
+                    System.out.println("Libro devuelto a tiempo. No hay multa.");
                 }
             } else {
                 System.out.println("Error al devolver el libro.");
-            }
-        }
-
-        // Mostrar historial
-        public void mostrarHistorialPrestamos() {
-            for (Prestamo p : historial) {
-                System.out.println("Usuario: " + p.usuario.getIdUsuario() + " | Libro: " + p.libro.getCodigo() +
-                                    " | Inicio: " + p.fechaInicio + " | Límite: " + p.fechaLimite);
             }
         }
 
@@ -198,13 +157,6 @@ public class SistemaBiblioteca {
         private Libro buscarLibro(String codigo) {
             for (Libro l : libros) {
                 if (l.getCodigo().equals(codigo)) return l;
-            }
-            return null;
-        }
-
-        private Prestamo buscarPrestamo(Usuario usuario, Libro libro) {
-            for (Prestamo p : historial) {
-                if (p.usuario == usuario && p.libro == libro) return p;
             }
             return null;
         }
@@ -224,7 +176,6 @@ public class SistemaBiblioteca {
             System.out.println("4. Mostrar Usuarios");
             System.out.println("5. Prestar Libro");
             System.out.println("6. Devolver Libro");
-            System.out.println("7. Mostrar Historial de Préstamos");
             System.out.println("0. Salir");
             System.out.print("Opción: ");
             opcion = sc.nextInt();
@@ -265,10 +216,10 @@ public class SistemaBiblioteca {
                     String idDev = sc.nextLine();
                     System.out.print("Código libro: ");
                     String codDev = sc.nextLine();
-                    biblioteca.devolverLibro(idDev, codDev);
-                    break;
-                case 7:
-                    biblioteca.mostrarHistorialPrestamos();
+                    System.out.print("¿Cuántos días de retraso hubo?: ");
+                    int diasRetraso = sc.nextInt();
+                    sc.nextLine();
+                    biblioteca.devolverLibro(idDev, codDev, diasRetraso);
                     break;
                 case 0:
                     System.out.println("Saliendo...");
